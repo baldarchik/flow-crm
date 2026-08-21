@@ -21,25 +21,25 @@
             <span class="brand-copy"><strong>FLOW</strong><small>CRM</small></span>
           </a>
           <button class="icon-btn sidebar-collapse" id="sidebar-collapse" type="button" aria-label="Свернуть меню" data-tooltip="Свернуть меню">
-            <span aria-hidden="true">‹</span>
+            <span aria-hidden="true"><i data-lucide="chevron-left">‹</i></span>
           </button>
         </div>
 
         <nav class="nav-list" aria-label="Разделы CRM">
           <a class="nav-item active" href="#overview" data-page="overview">
-            <span class="nav-icon" aria-hidden="true">⌂</span><span class="nav-label">Обзор</span>
+            <span class="nav-icon" aria-hidden="true"><i data-lucide="house">⌂</i></span><span class="nav-label">Обзор</span>
           </a>
           <a class="nav-item" href="#leads" data-page="leads">
-            <span class="nav-icon" aria-hidden="true">▦</span><span class="nav-label">Заявки</span><span class="nav-count" id="leads-nav-count">0</span>
+            <span class="nav-icon" aria-hidden="true"><i data-lucide="inbox">▦</i></span><span class="nav-label">Заявки</span><span class="nav-count" id="leads-nav-count">0</span>
           </a>
           <a class="nav-item" href="#clients" data-page="clients">
-            <span class="nav-icon" aria-hidden="true">◉</span><span class="nav-label">Клиенты</span>
+            <span class="nav-icon" aria-hidden="true"><i data-lucide="users">◉</i></span><span class="nav-label">Клиенты</span>
           </a>
           <a class="nav-item" href="#tasks" data-page="tasks">
-            <span class="nav-icon" aria-hidden="true">✓</span><span class="nav-label">Задачи</span><span class="nav-count" id="tasks-nav-count">0</span>
+            <span class="nav-icon" aria-hidden="true"><i data-lucide="square-check-big">✓</i></span><span class="nav-label">Задачи</span><span class="nav-count" id="tasks-nav-count">0</span>
           </a>
           <a class="nav-item" href="#analytics" data-page="analytics">
-            <span class="nav-icon" aria-hidden="true">⌁</span><span class="nav-label">Аналитика</span>
+            <span class="nav-icon" aria-hidden="true"><i data-lucide="chart-no-axes-combined">⌁</i></span><span class="nav-label">Аналитика</span>
           </a>
         </nav>
 
@@ -47,10 +47,10 @@
 
         <nav class="nav-list nav-list-secondary" aria-label="Дополнительно">
           <a class="nav-item" href="#integrations" data-page="integrations">
-            <span class="nav-icon" aria-hidden="true">◇</span><span class="nav-label">Интеграции</span>
+            <span class="nav-icon" aria-hidden="true"><i data-lucide="plug">◇</i></span><span class="nav-label">Интеграции</span>
           </a>
           <a class="nav-item" href="#settings" data-page="settings">
-            <span class="nav-icon" aria-hidden="true">⚙</span><span class="nav-label">Настройки</span>
+            <span class="nav-icon" aria-hidden="true"><i data-lucide="settings">⚙</i></span><span class="nav-label">Настройки</span>
           </a>
         </nav>
 
@@ -64,7 +64,7 @@
         <button class="profile-card" type="button" data-action="open-profile" aria-label="Профиль пользователя">
           <span class="avatar">А</span>
           <span class="profile-copy"><strong>Александр</strong><small>Администратор</small></span>
-          <span class="profile-more" aria-hidden="true">···</span>
+          <span class="profile-more" aria-hidden="true"><i data-lucide="ellipsis">···</i></span>
         </button>
       </aside>
 
@@ -74,7 +74,7 @@
         <header class="topbar">
           <div class="topbar-left">
             <button class="icon-btn menu-btn" id="menu-btn" type="button" aria-label="Открыть меню">
-              <span aria-hidden="true">☰</span>
+              <span aria-hidden="true"><i data-lucide="menu">☰</i></span>
             </button>
             <div class="global-search-wrap">
               <button class="global-search-trigger" id="global-search-trigger" type="button" aria-label="Открыть глобальный поиск">
@@ -95,13 +95,13 @@
 
           <div class="topbar-actions">
             <button class="icon-btn" id="notifications-btn" type="button" aria-label="Уведомления" data-tooltip="Уведомления">
-              <span class="bell-symbol" aria-hidden="true">♧</span><span class="unread-dot"></span>
+              <span class="bell-symbol" aria-hidden="true"><i data-lucide="bell">♧</i></span><span class="unread-dot"></span>
             </button>
             <div class="notifications-popover popover" id="notifications-popover" aria-hidden="true">
               <div class="popover-heading"><strong>Уведомления</strong><button type="button" data-action="mark-read">Прочитать все</button></div>
               <div id="notifications-list"></div>
             </div>
-            <button class="primary-btn top-create-btn" type="button" data-action="new-lead"><span aria-hidden="true">＋</span> Новая заявка</button>
+            <button class="primary-btn top-create-btn" type="button" data-action="new-lead"><span aria-hidden="true"><i data-lucide="plus">＋</i></span> Новая заявка</button>
           </div>
         </header>
 
@@ -128,6 +128,7 @@
 
     <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
 
+  <script src="lucide.min.js"></script>
     <script src="app.js"></script>
   </body>
 </html>

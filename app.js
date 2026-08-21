@@ -26,6 +26,20 @@
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 
+  function icon(name, fallback = "", className = "inline-icon") {
+    return `<span class="${className}" aria-hidden="true"><i data-lucide="${name}">${fallback}</i></span>`;
+  }
+
+  let iconFrame = null;
+  function queueIcons() {
+    window.cancelAnimationFrame(iconFrame);
+    iconFrame = window.requestAnimationFrame(() => {
+      if (window.lucide?.createIcons) {
+        window.lucide.createIcons({ attrs: { "aria-hidden": "true", "stroke-width": 1.8 } });
+      }
+    });
+  }
+
   const dom = {
     shell: $("#app-shell"),
     main: $("#main-content"),
@@ -252,11 +266,11 @@
       leads,
       clients: [...coreClients, ...generatedClients],
       tasks: [
-        { id: 1, title: "Позвонить Алексею", dueAt: isoAt(0, 13, 0), completed: false, createdAt: isoAt(-1, 17, 0) },
-        { id: 2, title: "Отправить расчёт Марии", dueAt: isoAt(0, 15, 30), completed: false, createdAt: isoAt(-1, 17, 15) },
-        { id: 3, title: "Уточнить запись Дмитрия", dueAt: isoAt(1, 10, 0), completed: false, createdAt: isoAt(0, 9, 0) },
-        { id: 4, title: "Заказать состав для керамики", dueAt: isoAt(3, 12, 0), completed: false, createdAt: isoAt(-2, 16, 0) },
-        { id: 5, title: "Обновить прайс на услуги", dueAt: isoAt(-1, 18, 0), completed: true, createdAt: isoAt(-4, 12, 0), completedAt: isoAt(-1, 17, 20) },
+        { id: 1, title: "Позвонить Алексею", dueAt: isoAt(0, 13, 0), completed: false, createdAt: isoAt(-1, 17, 0), clientId: 1, leadId: 1042, priority: "high", assignee: "Александр" },
+        { id: 2, title: "Отправить расчёт Марии", dueAt: isoAt(0, 15, 30), completed: false, createdAt: isoAt(-1, 17, 15), clientId: 2, leadId: 1040, priority: "medium", assignee: "Александр" },
+        { id: 3, title: "Уточнить запись Дмитрия", dueAt: isoAt(1, 10, 0), completed: false, createdAt: isoAt(0, 9, 0), clientId: null, leadId: null, priority: "medium", assignee: "Александр" },
+        { id: 4, title: "Заказать состав для керамики", dueAt: isoAt(3, 12, 0), completed: false, createdAt: isoAt(-2, 16, 0), clientId: null, leadId: null, priority: "low", assignee: "Александр" },
+        { id: 5, title: "Обновить прайс на услуги", dueAt: isoAt(-1, 18, 0), completed: true, createdAt: isoAt(-4, 12, 0), completedAt: isoAt(-1, 17, 20), clientId: null, leadId: null, priority: "low", assignee: "Александр" },
       ],
       settings: {
         company: "Blackline Detailing",
@@ -288,6 +302,21 @@
       if (!Array.isArray(parsed.leads) || !Array.isArray(parsed.clients) || !Array.isArray(parsed.tasks) || !parsed.settings) {
         throw new Error("Некорректные данные");
       }
+      const taskDefaults = {
+        1: { clientId: 1, leadId: 1042, priority: "high", assignee: "Александр" },
+        2: { clientId: 2, leadId: 1040, priority: "medium", assignee: "Александр" },
+        3: { clientId: null, leadId: null, priority: "medium", assignee: "Александр" },
+        4: { clientId: null, leadId: null, priority: "low", assignee: "Александр" },
+        5: { clientId: null, leadId: null, priority: "low", assignee: "Александр" },
+      };
+      let migrated = false;
+      parsed.tasks.forEach((task) => {
+        const defaults = taskDefaults[task.id] || { clientId: null, leadId: null, priority: "medium", assignee: parsed.settings.userName || "Александр" };
+        Object.entries(defaults).forEach(([key, value]) => {
+          if (task[key] === undefined) { task[key] = value; migrated = true; }
+        });
+      });
+      if (migrated) localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
       return parsed;
     } catch (error) {
       console.warn("FLOW CRM: демо-данные восстановлены", error);
@@ -369,6 +398,8 @@
 
   function renderPage() {
     ui.page = getRoute();
+    dom.main.dataset.page = ui.page;
+    window.scrollTo({ top: 0, behavior: "auto" });
     $$(".nav-item").forEach((item) => item.classList.toggle("active", item.dataset.page === ui.page));
     closeMobileMenu();
     closePopovers();
@@ -387,6 +418,7 @@
     void dom.main.offsetWidth;
     dom.main.classList.add("page-enter");
     dom.main.focus({ preventScroll: true });
+    queueIcons();
   }
 
   function renderOverview() {
@@ -408,7 +440,7 @@
     ];
 
     dom.main.innerHTML = `
-      ${pageHeader(`Доброе утро, ${state.settings.userName} 👋`, "Вот что происходит с вашим бизнесом сегодня.", `${periodSwitch}<button class="primary-btn" type="button" data-action="new-lead"><span>＋</span> Новая заявка</button>`)}
+      ${pageHeader(`Доброе утро, ${state.settings.userName} 👋`, "Вот что происходит с вашим бизнесом сегодня.", periodSwitch)}
       <section class="kpi-grid" aria-label="Ключевые показатели">
         ${kpis.map((kpi) => `<article class="card kpi-card" style="--kpi-color:${kpi.color};--kpi-glow:${kpi.glow}">
           <div class="kpi-top"><span class="kpi-label">${kpi.label}</span><span class="kpi-icon">${kpi.icon}</span></div>
@@ -447,6 +479,7 @@
       </section>`;
 
     requestAnimationFrame(drawOverviewChart);
+    queueIcons();
   }
 
   function funnelRow(label, count, rate, color) {
@@ -458,7 +491,7 @@
   }
 
   function leadRow(lead, index, full = true) {
-    return `<tr data-action="open-lead" data-lead-id="${lead.id}" tabindex="0">
+    return `<tr class="${ui.selectedLeadIds.has(lead.id) ? "selected-row" : ""}" data-action="open-lead" data-lead-id="${lead.id}" tabindex="0">
       ${full ? `<td><input type="checkbox" data-action="select-lead" data-lead-id="${lead.id}" aria-label="Выбрать заявку #${lead.id}" ${ui.selectedLeadIds.has(lead.id) ? "checked" : ""}></td>` : ""}
       <td class="primary-cell">#${lead.id}</td>
       <td><div class="client-cell">${clientAvatar(lead.name, index)}<div class="client-name-stack"><strong>${escapeHtml(lead.name)}</strong><small>${escapeHtml(lead.source)}</small></div></div></td>
@@ -468,7 +501,7 @@
       <td>${statusBadge(lead.status)}</td>
       ${full ? `<td>${sourceBadge(lead.source)}</td>` : ""}
       <td class="muted-cell">${formatDate(lead.createdAt)}</td>
-      ${full ? `<td><button class="task-action" type="button" data-action="open-lead" data-lead-id="${lead.id}" aria-label="Открыть заявку">•••</button></td>` : ""}
+      ${full ? `<td><button class="task-action" type="button" data-action="open-lead" data-lead-id="${lead.id}" aria-label="Открыть заявку">${icon("ellipsis", "•••")}</button></td>` : ""}
     </tr>`;
   }
 
@@ -511,7 +544,7 @@
     const actions = `<div class="segmented view-switch" aria-label="Вид заявок">
       <button type="button" data-action="leads-view" data-view="kanban" class="${ui.leadsView === "kanban" ? "active" : ""}">Канбан</button>
       <button type="button" data-action="leads-view" data-view="table" class="${ui.leadsView === "table" ? "active" : ""}">Таблица</button>
-    </div><button class="primary-btn" type="button" data-action="new-lead"><span>＋</span> Новая заявка</button>`;
+    </div><button class="primary-btn" type="button" data-action="new-lead">${icon("plus", "＋", "button-icon")} Новая заявка</button>`;
 
     dom.main.innerHTML = `
       ${pageHeader("Заявки", `${state.leads.length} заявок во всех статусах`, actions)}
@@ -525,6 +558,7 @@
         </select>
       </div>
       <div id="leads-surface">${ui.leadsView === "kanban" ? kanbanTemplate(filtered) : leadsTableTemplate(filtered)}</div>`;
+    queueIcons();
   }
 
   function kanbanTemplate(leads) {
@@ -602,7 +636,7 @@
     const pageItems = clients.slice(start, start + perPage);
 
     dom.main.innerHTML = `
-      ${pageHeader("Клиенты", "Вся клиентская база в одном месте", `<button class="primary-btn" type="button" data-action="new-client"><span>＋</span> Добавить клиента</button>`)}
+      ${pageHeader("Клиенты", "Вся клиентская база в одном месте", `<button class="primary-btn" type="button" data-action="new-client">${icon("user-plus", "＋", "button-icon")} Добавить клиента</button>`)}
       <section class="stat-strip">
         ${stripStat("◎", state.clients.length, "Всего клиентов")}
         ${stripStat("↗", recentCount, "Новых за месяц")}
@@ -614,9 +648,10 @@
           <tbody>${pageItems.map((client, index) => `<tr data-action="open-client" data-client-id="${client.id}" tabindex="0">
             <td><div class="client-cell">${clientAvatar(client.name, index)}<div class="client-name-stack"><strong>${escapeHtml(client.name)}</strong><small>Клиент #${client.id}</small></div></div></td>
             <td>${escapeHtml(client.phone)}</td><td>${escapeHtml(client.lastOrder || "—")}</td><td class="primary-cell">${client.orders}</td><td class="money-cell">${formatCurrency(client.spent)}</td><td class="muted-cell">${formatDate(client.lastContact, false)}</td>
-            <td><button class="task-action" type="button" data-action="open-client" data-client-id="${client.id}" aria-label="Открыть клиента">•••</button></td></tr>`).join("")}</tbody></table></div>
+            <td><button class="task-action" type="button" data-action="open-client" data-client-id="${client.id}" aria-label="Открыть клиента">${icon("ellipsis", "•••")}</button></td></tr>`).join("")}</tbody></table></div>
           ${paginationTemplate(ui.clientPage, pages, clients.length, start, pageItems.length, "client-page")}` : emptyState("Клиенты не найдены", "Попробуйте изменить поисковый запрос", `<button class="secondary-btn" type="button" data-action="clear-client-search">Сбросить поиск</button>`)}
       </section>`;
+    queueIcons();
   }
 
   function stripStat(icon, value, label) {
@@ -632,12 +667,13 @@
     const completed = state.tasks.filter((task) => task.completed).sort((a, b) => new Date(b.completedAt || b.dueAt) - new Date(a.completedAt || a.dueAt));
 
     dom.main.innerHTML = `
-      ${pageHeader("Задачи", `${active.length} активных задач`, `<button class="primary-btn" type="button" data-action="new-task"><span>＋</span> Новая задача</button>`)}
+      ${pageHeader("Задачи", `${active.length} активных задач`, `<button class="primary-btn" type="button" data-action="new-task">${icon("plus", "＋", "button-icon")} Новая задача</button>`)}
       <section class="tasks-board">
         ${taskColumn("Сегодня", today, "#c38a39", now)}
         ${taskColumn("Предстоящие", upcoming, "#6571d4", now)}
         ${taskColumn("Выполненные", completed, "#3c8a67", now, true)}
       </section>`;
+    queueIcons();
   }
 
   function taskColumn(title, tasks, color, now, completed = false) {
@@ -647,22 +683,33 @@
 
   function taskCard(task, now) {
     const overdue = !task.completed && new Date(task.dueAt) < now;
+    const lead = state.leads.find((item) => item.id === Number(task.leadId));
+    const client = state.clients.find((item) => item.id === Number(task.clientId));
+    const contact = client || (lead ? { name: lead.name, phone: lead.phone } : null);
+    const priority = {
+      high: { label: "Высокий", className: "priority-high" },
+      medium: { label: "Средний", className: "priority-medium" },
+      low: { label: "Низкий", className: "priority-low" },
+    }[task.priority] || { label: "Средний", className: "priority-medium" };
+    const digits = normalizePhone(contact?.phone || "");
     return `<article class="task-card ${task.completed ? "completed" : ""}">
-      <div class="task-main"><button class="task-check" type="button" data-action="toggle-task" data-task-id="${task.id}" aria-label="${task.completed ? "Вернуть задачу" : "Отметить задачу выполненной"}">${task.completed ? "✓" : ""}</button>
+      <div class="task-main"><button class="task-check" type="button" data-action="toggle-task" data-task-id="${task.id}" aria-label="${task.completed ? "Вернуть задачу" : "Отметить задачу выполненной"}">${task.completed ? icon("check", "✓") : ""}</button>
       <div class="task-copy"><div class="task-title">${escapeHtml(task.title)}</div><div class="task-date ${overdue ? "overdue" : ""}">${overdue ? "Просрочено · " : ""}${formatDate(task.dueAt)}</div></div></div>
-      <div class="task-actions"><button class="task-action" type="button" data-action="edit-task" data-task-id="${task.id}" aria-label="Редактировать задачу">✎</button><button class="task-action danger" type="button" data-action="delete-task" data-task-id="${task.id}" aria-label="Удалить задачу">×</button></div>
+      ${contact ? `<div class="task-context"><div class="task-client-line"><strong>${escapeHtml(contact.name)}</strong>${lead ? `<span>· #${lead.id}</span>` : ""}</div><span class="task-phone">${escapeHtml(contact.phone || "Телефон не указан")}</span></div>` : ""}
+      <div class="task-footer"><div class="task-meta"><span class="priority-badge ${priority.className}">${priority.label}</span>${task.assignee ? `<span class="task-assignee" data-tooltip="Исполнитель: ${escapeHtml(task.assignee)}">${escapeHtml(initials(task.assignee))}</span>` : ""}</div>
+      <div class="task-actions">${digits ? `<a class="task-action call" href="tel:${digits}" aria-label="Позвонить клиенту">${icon("phone", "☎")}</a>` : ""}${lead ? `<button class="task-action" type="button" data-action="open-lead" data-lead-id="${lead.id}" aria-label="Открыть связанную заявку">${icon("external-link", "↗")}</button>` : ""}<button class="task-action" type="button" data-action="edit-task" data-task-id="${task.id}" aria-label="Редактировать задачу">${icon("pencil", "✎")}</button><button class="task-action danger" type="button" data-action="delete-task" data-task-id="${task.id}" aria-label="Удалить задачу">${icon("trash-2", "×")}</button></div></div>
     </article>`;
   }
 
   function renderAnalytics() {
     const periodLeads = leadsForPeriod(ui.analyticsPeriod);
     const metrics = getMetrics(periodLeads);
-    const actions = `<div class="segmented" aria-label="Период аналитики">${[["7", "7 дней"], ["30", "30 дней"], ["90", "90 дней"], ["365", "Год"]].map(([value, label]) => `<button type="button" data-action="analytics-period" data-period="${value}" class="${ui.analyticsPeriod === value ? "active" : ""}>${label}</button>`).join("")}</div>`;
+    const actions = `<div class="segmented" aria-label="Период аналитики">${[["7", "7 дней"], ["30", "30 дней"], ["90", "90 дней"], ["365", "Год"]].map(([value, label]) => `<button type="button" data-action="analytics-period" data-period="${value}" class="${ui.analyticsPeriod === value ? "active" : ""}">${label}</button>`).join("")}</div>`;
     const kpis = [
-      ["Выручка", formatCurrency(metrics.revenue), "+12.4%", "↗", "#5865d8", "#eef0ff"],
-      ["Количество заказов", metrics.count, "+8.2%", "#", "#397f8c", "#eaf7f8"],
-      ["Средний чек", formatCurrency(metrics.average), "+5.1%", "≋", "#9a6b31", "#fff4dd"],
-      ["Конверсия", `${metrics.conversion}%`, "+3.4%", "%", "#377c6a", "#e8f5ef"],
+      ["Выручка", formatCurrency(metrics.revenue), "+12.4%", "wallet-cards", "₽", "#5865d8", "#eef0ff"],
+      ["Количество заказов", metrics.count, "+8.2%", "shopping-bag", "#", "#397f8c", "#eaf7f8"],
+      ["Средний чек", formatCurrency(metrics.average), "+5.1%", "receipt-text", "≋", "#9a6b31", "#fff4dd"],
+      ["Конверсия", `${metrics.conversion}%`, "+3.4%", "percent", "%", "#377c6a", "#e8f5ef"],
     ];
     const sourceData = [
       ["Instagram", 38, "#5865d8"], ["WhatsApp", 24, "#77a4b3"], ["Telegram", 16, "#9b87cc"], ["Сайт", 12, "#c69b58"], ["Рекомендации", 10, "#78a482"],
@@ -673,13 +720,17 @@
 
     dom.main.innerHTML = `
       ${pageHeader("Аналитика", "Показатели, которые помогают вашему бизнесу расти", actions)}
-      <section class="kpi-grid">${kpis.map(([label, value, trend, icon, color, glow]) => `<article class="card kpi-card" style="--kpi-color:${color};--kpi-glow:${glow}"><div class="kpi-top"><span class="kpi-label">${label}</span><span class="kpi-icon">${icon}</span></div><div class="kpi-bottom"><strong class="kpi-value">${value}</strong><span class="trend">↗ ${trend}</span></div></article>`).join("")}</section>
+      <section class="kpi-grid analytics-kpi-grid">${kpis.map(([label, value, trend, iconName, fallback, color, glow]) => `<article class="card kpi-card" style="--kpi-color:${color};--kpi-glow:${glow}"><div class="kpi-top"><span class="kpi-label">${label}</span><span class="kpi-icon"><i data-lucide="${iconName}">${fallback}</i></span></div><div class="kpi-bottom"><strong class="kpi-value">${value}</strong><span class="trend">↗ ${trend}</span></div></article>`).join("")}</section>
       <section class="analytics-grid">
         <article class="card chart-card"><div class="card-header"><div class="card-header-text"><h2>Выручка</h2><p>Динамика за выбранный период</p></div><span class="chart-legend"><i class="legend-dot"></i>Выручка</span></div><div class="chart-wrap"><canvas id="analytics-chart" role="img" aria-label="График выручки"></canvas></div></article>
         <article class="card"><div class="card-header"><div class="card-header-text"><h2>Источники заявок</h2><p>Распределение обращений</p></div></div><div class="donut-layout"><div class="donut"><div class="donut-center"><strong>100%</strong><span>все заявки</span></div></div><div class="donut-legend">${sourceData.map(([name, percent, color]) => `<div class="donut-item" style="--legend-color:${color}"><i></i><span>${name}</span><strong>${percent}%</strong></div>`).join("")}</div></div></article>
       </section>
-      <section class="card"><div class="card-header"><div class="card-header-text"><h2>Популярные услуги</h2><p>По количеству заказов и выручке</p></div></div><div class="services-list">${services.map(([name, orders, revenue, width]) => `<div class="service-row"><div class="service-title"><strong>${name}</strong><div class="service-track" style="--service-width:${width}%"><span></span></div></div><span class="service-orders">${orders} заказов</span><span class="service-revenue">${formatCurrency(revenue)}</span></div>`).join("")}</div></section>`;
+      <section class="analytics-secondary-grid">
+        <article class="card"><div class="card-header"><div class="card-header-text"><h2>Популярные услуги</h2><p>По количеству заказов и выручке</p></div></div><div class="services-list">${services.map(([name, orders, revenue, width]) => `<div class="service-row"><div class="service-title"><strong>${name}</strong><div class="service-track" style="--service-width:${width}%"><span></span></div></div><span class="service-orders">${orders} заказов</span><span class="service-revenue">${formatCurrency(revenue)}</span></div>`).join("")}</div></article>
+        <article class="card analytics-funnel-card"><div class="card-header"><div class="card-header-text"><h2>Воронка продаж</h2><p>Конверсия по этапам</p></div><span class="trend">${metrics.conversion}%</span></div><div class="funnel-list">${funnelRow("Новые", metrics.count, 100, "#6571d4")}${funnelRow("Связались", metrics.contacted, metrics.count ? metrics.contacted / metrics.count * 100 : 0, "#c38a39")}${funnelRow("В работе", metrics.working, metrics.count ? metrics.working / metrics.count * 100 : 0, "#438b99")}${funnelRow("Выполнено", metrics.completed, metrics.count ? metrics.completed / metrics.count * 100 : 0, "#3c8a67")}</div></article>
+      </section>`;
     requestAnimationFrame(drawAnalyticsChart);
+    queueIcons();
   }
 
   function drawAnalyticsChart() {
@@ -794,6 +845,7 @@
         <button class="${active ? "secondary-btn" : "ghost-btn"} integration-action" type="button" data-action="integration-demo" data-integration="${name}" ${active ? "" : "disabled"}>${active ? "Подключить" : "Скоро"}</button>
       </article>`).join("")}</div>
       <div class="card" style="margin-top:16px;padding:18px 20px;color:var(--ink-soft);font-size:10.5px"><strong style="color:var(--ink)">Демо-режим</strong><br>Подключение внешних сервисов потребует API и безопасной серверной авторизации. В MVP показан интерфейс будущих интеграций без имитации реального соединения.</div>`;
+    queueIcons();
   }
 
   function renderSettings() {
@@ -802,6 +854,7 @@
       ${pageHeader("Настройки", "Управление компанией и рабочим пространством")}
       <div class="settings-layout"><nav class="card settings-nav" aria-label="Разделы настроек">${tabs.map(([key, label]) => `<button class="settings-tab ${ui.settingsTab === key ? "active" : ""}" type="button" data-action="settings-tab" data-tab="${key}">${label}</button>`).join("")}</nav>
       <section class="card settings-panel" id="settings-panel">${settingsPanelTemplate()}</section></div>`;
+    queueIcons();
   }
 
   function settingsPanelTemplate() {
@@ -858,6 +911,7 @@
     dom.modalOverlay.setAttribute("aria-hidden", "false");
     document.body.style.overflow = "hidden";
     requestAnimationFrame(() => {
+      queueIcons();
       const focusTarget = $("input:not([type=hidden]), select, textarea, button", dom.modal);
       focusTarget?.focus();
     });
@@ -878,7 +932,7 @@
     dom.drawerOverlay.classList.add("open");
     dom.drawerOverlay.setAttribute("aria-hidden", "false");
     document.body.style.overflow = "hidden";
-    requestAnimationFrame(() => $(".close-btn", dom.drawer)?.focus());
+    requestAnimationFrame(() => { queueIcons(); $(".close-btn", dom.drawer)?.focus(); });
   }
 
   function closeDrawer(restoreFocus = true) {
@@ -891,11 +945,11 @@
   }
 
   function modalHeader(title, subtitle = "") {
-    return `<header class="modal-header"><div class="modal-heading"><h2 id="modal-title">${escapeHtml(title)}</h2>${subtitle ? `<p>${escapeHtml(subtitle)}</p>` : ""}</div><button class="close-btn" type="button" data-action="close-modal" aria-label="Закрыть">×</button></header>`;
+    return `<header class="modal-header"><div class="modal-heading"><h2 id="modal-title">${escapeHtml(title)}</h2>${subtitle ? `<p>${escapeHtml(subtitle)}</p>` : ""}</div><button class="close-btn" type="button" data-action="close-modal" aria-label="Закрыть">${icon("x", "×")}</button></header>`;
   }
 
   function drawerHeader(title, subtitle = "") {
-    return `<header class="drawer-header"><div class="drawer-heading"><h2 id="drawer-title">${escapeHtml(title)}</h2>${subtitle ? `<p>${escapeHtml(subtitle)}</p>` : ""}</div><button class="close-btn" type="button" data-action="close-drawer" aria-label="Закрыть">×</button></header>`;
+    return `<header class="drawer-header"><div class="drawer-heading"><h2 id="drawer-title">${escapeHtml(title)}</h2>${subtitle ? `<p>${escapeHtml(subtitle)}</p>` : ""}</div><button class="close-btn" type="button" data-action="close-drawer" aria-label="Закрыть">${icon("x", "×")}</button></header>`;
   }
 
   function openLeadModal(leadId = null) {
@@ -935,10 +989,16 @@
 
   function openTaskModal(taskId = null) {
     const task = taskId ? state.tasks.find((item) => item.id === Number(taskId)) : null;
+    const clients = state.clients.slice(0, 60);
+    const recentLeads = [...state.leads].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     openModal(`${modalHeader(task ? "Редактировать задачу" : "Новая задача", "Добавьте дело и срок выполнения")}
       <form id="task-form" data-task-id="${task?.id || ""}" novalidate><div class="modal-body"><div class="form-grid">
         <div class="form-field span-2"><label for="task-title">Название <span class="required">*</span></label><input id="task-title" name="title" value="${escapeHtml(task?.title || "")}" placeholder="Что нужно сделать?" required><span class="field-error"></span></div>
         <div class="form-field span-2"><label for="task-date">Дата и время <span class="required">*</span></label><input id="task-date" name="dueAt" type="datetime-local" value="${toDateTimeLocal(task?.dueAt)}" required><span class="field-error"></span></div>
+        <div class="form-field"><label for="task-client">Связанный клиент</label><select id="task-client" name="clientId"><option value="">Без клиента</option>${clients.map((client) => `<option value="${client.id}" ${Number(task?.clientId) === client.id ? "selected" : ""}>${escapeHtml(client.name)} · ${escapeHtml(client.phone)}</option>`).join("")}</select></div>
+        <div class="form-field"><label for="task-lead">Связанная заявка</label><select id="task-lead" name="leadId"><option value="">Без заявки</option>${recentLeads.map((lead) => `<option value="${lead.id}" ${Number(task?.leadId) === lead.id ? "selected" : ""}>#${lead.id} · ${escapeHtml(lead.name)}</option>`).join("")}</select></div>
+        <div class="form-field"><label for="task-priority">Приоритет</label><select id="task-priority" name="priority"><option value="high" ${task?.priority === "high" ? "selected" : ""}>Высокий</option><option value="medium" ${!task?.priority || task?.priority === "medium" ? "selected" : ""}>Средний</option><option value="low" ${task?.priority === "low" ? "selected" : ""}>Низкий</option></select></div>
+        <div class="form-field"><label for="task-assignee">Исполнитель</label><select id="task-assignee" name="assignee"><option value="${escapeHtml(state.settings.userName)}" ${task?.assignee !== "" ? "selected" : ""}>${escapeHtml(state.settings.userName)}</option><option value="" ${task?.assignee === "" ? "selected" : ""}>Без исполнителя</option></select></div>
       </div></div><footer class="modal-footer"><button class="secondary-btn" type="button" data-action="close-modal">Отмена</button><button class="primary-btn" type="submit">${task ? "Сохранить" : "Создать задачу"}</button></footer></form>`);
   }
 
@@ -968,7 +1028,7 @@
     return `${drawerHeader(`#${lead.id}`, "Карточка заявки")}
       <div class="drawer-body">
         <div class="drawer-lead-head"><span class="large-avatar">${escapeHtml(initials(lead.name))}</span><div class="drawer-person"><strong>${escapeHtml(lead.name)}</strong><span>${escapeHtml(lead.phone)}</span></div><button class="mini-btn" type="button" data-action="edit-lead" data-lead-id="${lead.id}">Редактировать</button></div>
-        <div class="quick-actions"><a class="quick-action" href="tel:${digits}"><span>☎</span>Позвонить</a><a class="quick-action" href="https://wa.me/${digits}" target="_blank" rel="noopener"><span>W</span>WhatsApp</a><button class="quick-action" type="button" data-action="telegram-contact" data-phone="${escapeHtml(lead.phone)}"><span>T</span>Telegram</button></div>
+        <div class="quick-actions"><a class="quick-action" href="tel:${digits}">${icon("phone", "☎")}Позвонить</a><a class="quick-action" href="https://wa.me/${digits}" target="_blank" rel="noopener">${icon("message-circle", "W")}WhatsApp</a><button class="quick-action" type="button" data-action="telegram-contact" data-phone="${escapeHtml(lead.phone)}">${icon("send", "T")}Telegram</button></div>
         <div class="info-grid">
           <div class="info-item"><span>Услуга</span><strong>${escapeHtml(lead.service)}</strong></div><div class="info-item"><span>Стоимость</span><strong>${formatCurrency(lead.amount)}</strong></div>
           <div class="info-item"><span>Источник</span><strong>${escapeHtml(lead.source)}</strong></div><div class="info-item"><span>Создана</span><strong>${formatLongDate(lead.createdAt)}</strong></div>
@@ -991,7 +1051,7 @@
     const digits = normalizePhone(client.phone);
     openDrawer(`${drawerHeader("Профиль клиента", `Клиент #${client.id}`)}
       <div class="drawer-body"><div class="drawer-lead-head"><span class="large-avatar">${escapeHtml(initials(client.name))}</span><div class="drawer-person"><strong>${escapeHtml(client.name)}</strong><span>${escapeHtml(client.phone)}</span></div></div>
-        <div class="quick-actions"><a class="quick-action" href="tel:${digits}"><span>☎</span>Позвонить</a><a class="quick-action" href="https://wa.me/${digits}" target="_blank" rel="noopener"><span>W</span>WhatsApp</a><button class="quick-action" type="button" data-action="telegram-contact" data-phone="${escapeHtml(client.phone)}"><span>T</span>Telegram</button></div>
+        <div class="quick-actions"><a class="quick-action" href="tel:${digits}">${icon("phone", "☎")}Позвонить</a><a class="quick-action" href="https://wa.me/${digits}" target="_blank" rel="noopener">${icon("message-circle", "W")}WhatsApp</a><button class="quick-action" type="button" data-action="telegram-contact" data-phone="${escapeHtml(client.phone)}">${icon("send", "T")}Telegram</button></div>
         <div class="client-metrics"><div class="client-metric"><strong>${client.orders}</strong><span>заказа</span></div><div class="client-metric"><strong>${formatCurrency(client.spent)}</strong><span>потрачено</span></div><div class="client-metric"><strong>${formatCurrency(average)}</strong><span>средний чек</span></div></div>
         <section class="drawer-section"><div class="drawer-section-head"><h3>История заказов</h3><span class="funnel-rate">${client.orders} всего</span></div><div class="order-history">${displayOrders.slice(0, 8).map((order) => `<div class="order-row"><div class="order-main"><strong>${escapeHtml(order.service)}</strong><span>${formatDate(order.at, false)}</span></div><div><div class="order-amount">${formatCurrency(order.amount)}</div><div class="order-date">Выполнено</div></div></div>`).join("")}</div></section>
         <section class="drawer-section"><div class="drawer-section-head"><h3>Заметки клиента</h3></div><textarea class="note-editor" id="client-note-editor" data-client-id="${client.id}" placeholder="Добавьте важную информацию о клиенте">${escapeHtml(client.notes || "")}</textarea><div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="secondary-btn" type="button" data-action="save-client-note" data-client-id="${client.id}">Сохранить заметку</button></div></section>
@@ -1112,16 +1172,24 @@
     const validDate = Boolean(dueAt.value) && !Number.isNaN(new Date(dueAt.value).getTime());
     setFieldError(dueAt, validDate ? "" : "Укажите дату и время");
     if (!validTitle || !validDate) return;
+    const data = Object.fromEntries(new FormData(form));
+    const taskFields = {
+      title: title.value.trim(),
+      dueAt: new Date(dueAt.value).toISOString(),
+      clientId: data.clientId ? Number(data.clientId) : null,
+      leadId: data.leadId ? Number(data.leadId) : null,
+      priority: data.priority || "medium",
+      assignee: data.assignee || "",
+    };
     const editingId = Number(form.dataset.taskId) || null;
     if (editingId) {
       const task = state.tasks.find((item) => item.id === editingId);
       if (!task) return;
-      task.title = title.value.trim();
-      task.dueAt = new Date(dueAt.value).toISOString();
+      Object.assign(task, taskFields);
       toast("Задача обновлена", task.title);
     } else {
       const id = Math.max(0, ...state.tasks.map((task) => task.id)) + 1;
-      state.tasks.unshift({ id, title: title.value.trim(), dueAt: new Date(dueAt.value).toISOString(), completed: false, createdAt: new Date().toISOString() });
+      state.tasks.unshift({ id, ...taskFields, completed: false, createdAt: new Date().toISOString() });
       toast("Задача создана", title.value.trim());
     }
     saveState();
@@ -1262,6 +1330,7 @@
         event.stopPropagation();
         const id = Number(actionElement.dataset.leadId);
         actionElement.checked ? ui.selectedLeadIds.add(id) : ui.selectedLeadIds.delete(id);
+        actionElement.closest("tr")?.classList.toggle("selected-row", actionElement.checked);
         break;
       }
       case "select-page-leads": {
@@ -1423,6 +1492,7 @@
     loadUIPreferences();
     bindEvents();
     updateShell();
+    queueIcons();
     renderGlobalSearch();
     window.setTimeout(() => {
       dom.shell.classList.remove("is-loading");
