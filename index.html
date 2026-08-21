@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f5f6f8" />
+    <meta
+      name="description"
+      content="FLOW CRM — простая CRM для малого бизнеса: заявки, клиенты, задачи и аналитика."
+    />
+    <title>FLOW CRM — Простая CRM для малого бизнеса</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app-shell is-loading" id="app-shell">
+      <aside class="sidebar" id="sidebar" aria-label="Главное меню">
+        <div class="sidebar-top">
+          <a class="brand" href="#overview" aria-label="FLOW CRM — обзор">
+            <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span class="brand-copy"><strong>FLOW</strong><small>CRM</small></span>
+          </a>
+          <button class="icon-btn sidebar-collapse" id="sidebar-collapse" type="button" aria-label="Свернуть меню" data-tooltip="Свернуть меню">
+            <span aria-hidden="true">‹</span>
+          </button>
+        </div>
+
+        <nav class="nav-list" aria-label="Разделы CRM">
+          <a class="nav-item active" href="#overview" data-page="overview">
+            <span class="nav-icon" aria-hidden="true">⌂</span><span class="nav-label">Обзор</span>
+          </a>
+          <a class="nav-item" href="#leads" data-page="leads">
+            <span class="nav-icon" aria-hidden="true">▦</span><span class="nav-label">Заявки</span><span class="nav-count" id="leads-nav-count">0</span>
+          </a>
+          <a class="nav-item" href="#clients" data-page="clients">
+            <span class="nav-icon" aria-hidden="true">◉</span><span class="nav-label">Клиенты</span>
+          </a>
+          <a class="nav-item" href="#tasks" data-page="tasks">
+            <span class="nav-icon" aria-hidden="true">✓</span><span class="nav-label">Задачи</span><span class="nav-count" id="tasks-nav-count">0</span>
+          </a>
+          <a class="nav-item" href="#analytics" data-page="analytics">
+            <span class="nav-icon" aria-hidden="true">⌁</span><span class="nav-label">Аналитика</span>
+          </a>
+        </nav>
+
+        <div class="nav-separator"></div>
+
+        <nav class="nav-list nav-list-secondary" aria-label="Дополнительно">
+          <a class="nav-item" href="#integrations" data-page="integrations">
+            <span class="nav-icon" aria-hidden="true">◇</span><span class="nav-label">Интеграции</span>
+          </a>
+          <a class="nav-item" href="#settings" data-page="settings">
+            <span class="nav-icon" aria-hidden="true">⚙</span><span class="nav-label">Настройки</span>
+          </a>
+        </nav>
+
+        <div class="sidebar-spacer"></div>
+
+        <div class="workspace-chip" title="Текущая компания">
+          <span class="workspace-dot"></span>
+          <span class="workspace-company">Blackline Detailing</span>
+        </div>
+
+        <button class="profile-card" type="button" data-action="open-profile" aria-label="Профиль пользователя">
+          <span class="avatar">А</span>
+          <span class="profile-copy"><strong>Александр</strong><small>Администратор</small></span>
+          <span class="profile-more" aria-hidden="true">···</span>
+        </button>
+      </aside>
+
+      <div class="mobile-backdrop" id="mobile-backdrop"></div>
+
+      <section class="app-stage">
+        <header class="topbar">
+          <div class="topbar-left">
+            <button class="icon-btn menu-btn" id="menu-btn" type="button" aria-label="Открыть меню">
+              <span aria-hidden="true">☰</span>
+            </button>
+            <div class="global-search-wrap">
+              <button class="global-search-trigger" id="global-search-trigger" type="button" aria-label="Открыть глобальный поиск">
+                <span class="search-symbol" aria-hidden="true"></span>
+                <span class="global-search-placeholder">Найти клиента или заявку...</span>
+                <kbd>⌘ K</kbd>
+              </button>
+              <div class="search-popover popover" id="search-popover" aria-hidden="true">
+                <div class="search-input-row">
+                  <span class="search-symbol" aria-hidden="true"></span>
+                  <input id="global-search-input" type="search" placeholder="Клиент, телефон, заявка или услуга" autocomplete="off" />
+                  <kbd>Esc</kbd>
+                </div>
+                <div class="search-results" id="global-search-results"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="topbar-actions">
+            <button class="icon-btn" id="notifications-btn" type="button" aria-label="Уведомления" data-tooltip="Уведомления">
+              <span class="bell-symbol" aria-hidden="true">♧</span><span class="unread-dot"></span>
+            </button>
+            <div class="notifications-popover popover" id="notifications-popover" aria-hidden="true">
+              <div class="popover-heading"><strong>Уведомления</strong><button type="button" data-action="mark-read">Прочитать все</button></div>
+              <div id="notifications-list"></div>
+            </div>
+            <button class="primary-btn top-create-btn" type="button" data-action="new-lead"><span aria-hidden="true">＋</span> Новая заявка</button>
+          </div>
+        </header>
+
+        <main class="main-content" id="main-content" tabindex="-1">
+          <div class="loading-skeleton" aria-label="Загрузка FLOW CRM">
+            <div class="skeleton-line skeleton-title"></div>
+            <div class="skeleton-line skeleton-subtitle"></div>
+            <div class="skeleton-grid">
+              <div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div>
+            </div>
+            <div class="skeleton-main"></div>
+          </div>
+        </main>
+      </section>
+    </div>
+
+    <div class="overlay" id="modal-overlay" aria-hidden="true">
+      <section class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"></section>
+    </div>
+
+    <div class="drawer-overlay" id="drawer-overlay" aria-hidden="true">
+      <aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title"></aside>
+    </div>
+
+    <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
